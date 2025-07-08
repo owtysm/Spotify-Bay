@@ -1,0 +1,130 @@
+ body {
+   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+   background-color: #f3f2f1;
+   margin: 2rem;
+   color: #323130;
+ }
+
+ h1 {
+   font-size: 2rem;
+   margin-bottom: 1rem;
+   color: #201f1e;
+ }
+
+ .download-btn {
+   margin-top: 0.5rem;
+ }
+
+ #result {
+   background-color: white;
+   padding: 1.5rem;
+   border-radius: 8px;
+   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+ }
+
+ h2 {
+   font-size: 1.25rem;
+   margin-bottom: 1rem;
+   color: #605e5c;
+ }
+
+ ul {
+   list-style: none;
+   padding-left: 0;
+ }
+
+ p {
+   border-radius: 6px;
+   padding: 1rem;
+   margin-bottom: 0.75rem;
+ }
+
+ p.y {
+   background-color: #e7ffe1;
+   border: 1px solid #92ff71;
+   border-left: 4px solid rgb(0, 231, 0);
+ }
+
+ p.n {
+   background-color: #f5f5f5;
+   border: 1px solid hsl(0, 0%, 88%);
+   border-left: 2px solid red;
+ }
+
+ a {
+   color: #0078d4;
+   text-decoration: none;
+   word-break: break-word;
+ }
+
+ button {
+   height: 32px;
+   border-radius: 16px;
+   border: none;
+   background-color: rgb(0, 0, 0);
+   color: white;
+   padding: 0 1rem 0 1rem;
+   transition: all 0.2s ease-out;
+ }
+
+ button:hover {
+   cursor: pointer;
+   background-color: rgba(0, 0, 0, 0.76);
+   transform: scale(1.05);
+ }
+
+ button:hover:active {
+   cursor: pointer;
+   transform: scale(0.95);
+ }
+
+ a:hover {
+   text-decoration: underline;
+ }
+
+ li:has(strong)::before {
+   display: inline-block;
+   content: "";
+   width: 10px;
+   height: 10px;
+   border-radius: 50%;
+   margin-right: 0.5rem;
+   vertical-align: middle;
+ }
+
+ .nobs-div {
+     background-color: #ede9ff;
+   padding: 1px 0 0.5rem 1rem;
+   border-radius: 8px;
+   box-shadow: 0 1px 3px #3b2c7e;;
+   margin-bottom: 16px;
+ }
+
+ .latest {
+   color: #594D93;
+   padding: 0 0 0 0;
+   margin: 0 0rem -1rem 0rem;
+ }
+
+ .unmodded-btn {
+   opacity: 33%;
+ }
+
+ body {
+   margin: 0;
+ }
+
+ .main {
+   margin: 32px;
+   margin-bottom: 0;
+ }
+
+ #proton {
+   background-image: url("assets/proton.png");
+   background-repeat: no-repeat;
+   background-size: contain;
+   display: inline-block;
+   height: 17px;
+   margin-top: 0.5rem;
+   width: 100%;
+ }

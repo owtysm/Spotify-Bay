@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Bay of the Spotify</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="main">
+    <div class = "nobs-div">
+    <div id="nobs">
+  <p id="nobs-content">Loading latest version...</p>
+</div>
+    </div>
+<p>
+  Do not install random .apks from untrusted sources.<br/>
+If you don't trust this website, do not download the apk files.<br/><br/>
+All versions are tested for the known "auto-skip" bug.
+</p>
+
+<div id="result">Loading...</div>
+</div>
+<script>
+async function fetchCSV() {
+  try {
+    const response = await fetch('list.csv');
+    if (!response.ok) throw new Error('Could not load CSV file');
+    const csvText = await response.text();
+    const parsed = parseCSV(csvText);
+
+    parsed.forEach(entry => {
+      console.log(`CSV Entry - version: ${entry.version}, url: ${entry.url}`);
+    });
+
+    return parsed;
+  } catch (e) {
+    console.error('Error loading CSV:', e);
+    return [];
+  }
+}
+
+function parseCSV(csvText) {
+  const lines = csvText.trim().split('\n');
+  const headers = lines.shift().split(',').map(h => h.trim());
+  return lines.map(line => {
+    const cols = line.split(',');
+    let obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = (cols[i] || '').trim();
+    });
+    return obj;
+  });
+}
+
+// Utility: parse version into comparable parts
+function parseSemver(version) {
+  return version.split('.').map(n => parseInt(n, 10));
+}
+
+// Utility: compare two versions
+function compareVersions(a, b) {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na !== nb) return nb - na;
+  }
+  return 0;
+}
+
+function copyDevInfo(version, downloadUrl, inDatabase) {
+    const info = `Version: ${version}
+Download URL: ${downloadUrl || 'N/A'}
+In Database: ${inDatabase ? 'Yes' : 'No'}`;
+
+    navigator.clipboard.writeText(info).then(() => {
+        alert('Developer info copied to clipboard!');
+    }).catch(err => {
+        alert('Failed to copy text: ' + err);
+    });
+}
+
+
+async function fetchAllVersionsAndCheckCSV() {
+  const listData = await fetchCSV();
+
+  // Get only CSV versions
+const csvOnlyVersions = listData
+  .filter(entry => entry.version && entry.url)
+  .sort((a, b) => compareVersions(a.version, b.version)); // sort descending
+
+if (csvOnlyVersions.length > 0) {
+  const latest = csvOnlyVersions[0];
+  const nobsDiv = document.getElementById('nobs-content');
+  nobsDiv.innerHTML = `
+    <h1 class=latest> 💾Latest</h1><br/>
+    <strong>Pre-patched:</strong> ${latest.version} <br/>
+    <button onclick="document.location = '${latest.url}';" class="download-btn" target="_blank" rel="noopener noreferrer">Download Now</button>
+    <a href="${latest.url}">${latest.url}</a>
+  `;
+} else {
+  const nobsDiv = document.getElementById('nobs-content');
+  nobsDiv.textContent = 'No pre-patched versions available yet.';
+}
+
+
+  const targetUrl = 'https://apkcombo.com/spotify/com.spotify.music/versions/';
+  const proxyUrl = `https://whateverorigin.org/get?url=${encodeURIComponent(targetUrl)}`;
+
+  try {
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Network response was not ok');
+
+    const data = await response.json();
+    const htmlText = data.contents;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, 'text/html');
+
+    const versionNodes = doc.querySelectorAll('ul.list-versions > li');
+
+    const allVersionsMap = new Map();
+
+    // First: scraped versions
+    versionNodes.forEach(li => {
+      const verSpan = li.querySelector('span.vername');
+      const a = li.querySelector('a.ver-item');
+      if (!verSpan || !a) return;
+
+      const verText = verSpan.textContent.trim().replace('Spotify ', '');
+      const href = a.getAttribute('href');
+      const fullUrl = 'https://apkcombo.com' + href;
+
+      allVersionsMap.set(verText, {
+        version: verText,
+        fromScrape: true,
+        downloadUrl: fullUrl,
+        fromCSV: false,
+        csvUrl: null
+      });
+    });
+
+    // Then: CSV entries
+    listData.forEach(entry => {
+      if (allVersionsMap.has(entry.version)) {
+        // Update existing entry
+        const existing = allVersionsMap.get(entry.version);
+        existing.fromCSV = true;
+        existing.csvUrl = entry.url;
+      } else {
+        // Add new entry
+        allVersionsMap.set(entry.version, {
+          version: entry.version,
+          fromScrape: false,
+          downloadUrl: null,
+          fromCSV: true,
+          csvUrl: entry.url
+        });
+      }
+    });
+
+    // Convert to array and sort by semver (descending)
+    const mergedList = Array.from(allVersionsMap.values()).sort((a, b) =>
+      compareVersions(a.version, b.version)
+    );
+
+    const resultDiv = document.getElementById('result');
+
+    if (mergedList.length === 0) {
+      resultDiv.textContent = 'No versions found.';
+      return;
+    }
+
+    let html = '<h2>Versions (Latest to Oldest)</h2><ul>';
+    html += mergedList.map(v => {
+      return `<p class="${v.fromCSV ? 'y' : 'n'}">
+        ${v.fromCSV ? '🎧' : '❌'} <strong>Spotify ${v.version} ${v.fromCSV ? '(Pre-Patched)' : ''}</strong><br/>
+
+        ${v.fromCSV ? `<a id="proton"></a><br/>` : ``}
+
+
+        ${v.fromCSV ? `` : `Not in database.<br/>`}
+
+        ${v.fromCSV ? `
+             <button 
+      class="copy-btn" 
+      data-version="${v.version}" 
+      data-url="${v.csvUrl || v.downloadUrl || ''}" 
+      data-indb="${v.fromCSV}"
+    >
+      💾 Download
+    </button>
+        `
+        : 
+        ``}
+      </p>`;
+    }).join('');
+    html += '</ul>';
+
+    resultDiv.innerHTML = html;
+
+document.querySelectorAll('.copy-btn').forEach(button => {
+  button.addEventListener('click', () => {
+ document.location = button.getAttribute('data-url');
+  });
+});
+
+document.querySelectorAll('.unmodded-btn').forEach(button => {
+  button.addEventListener('click', () => {
+ document.location = button.getAttribute('data-url');
+  });
+});
+
+  } catch (e) {
+    fetchAllVersionsAndCheckCSV();
+  }
+}
+
+fetchAllVersionsAndCheckCSV();
+</script>
+
+<p><br/><br/><br/>Spotify Bay is not affiliated with Spotify nor a part of Spotify<br/>
+Spotify Bay provides Spotify apk files with the <a href="https://revanced.app/">ReVanced</a> patches pre-applied<br/>
+</p>
+
+</body>
+</html>
